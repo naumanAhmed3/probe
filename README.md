@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Probe — MCP Inspector
 
-## Getting Started
+Probe is a web **client for the Model Context Protocol**. Point it at any MCP
+server, and it connects, enumerates the server's **tools, resources and
+prompts**, lets you invoke them through auto-generated forms, and shows the
+**JSON-RPC traffic** for every exchange.
 
-First, run the development server:
+**Live demo:** https://probe-topaz.vercel.app
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+> It opens pre-pointed at [Conduit](https://github.com/naumanAhmed3/conduit),
+> a companion MCP server — press **Connect** and start exploring.
+
+---
+
+## What it does
+
+1. **Connect** — give it any Streamable-HTTP MCP endpoint. Probe runs the MCP
+   `initialize` handshake and reads the server's capabilities.
+2. **Browse** — every tool, resource and prompt the server advertises is
+   listed in the catalog.
+3. **Invoke** —
+   - **Tools** get a form generated from their JSON-Schema `inputSchema`
+     (enums become dropdowns, types are coerced on submit).
+   - **Resources** are read by URI.
+   - **Prompts** are rendered with their declared arguments.
+4. **Inspect** — every operation shows the **JSON-RPC request/response
+   frames** it exchanged, so you can see the protocol on the wire.
+
+It is, in short, a browser-based version of the MCP Inspector — useful for
+developing and debugging any MCP server.
+
+---
+
+## How it works
+
+```
+  Browser ──▶ Next.js (App Router) on Vercel
+                │
+                ├─ POST /api/inspect  { url }
+                ├─ POST /api/invoke   { url, kind, name, args }
+                │       │
+                │       └─ lib/mcp-client.ts
+                │            @modelcontextprotocol/sdk  Client
+                │            + StreamableHTTPClientTransport
+                │
+                └────────Streamable HTTP────▶  any MCP server
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The MCP client runs **server-side** in Next.js route handlers — the official
+TypeScript SDK is a Node client, and proxying through the server also sidesteps
+browser CORS. Each request opens a fresh stateless connection, runs, and
+closes; the route returns the results together with the JSON-RPC log.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Tech stack
 
-## Learn More
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**
+- **`@modelcontextprotocol/sdk`** — MCP `Client` + Streamable HTTP transport
+- **Tailwind CSS v4** · **Vercel** hosting
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+probe/
+├── lib/
+│   ├── mcp-client.ts   connect · inspect · invoke + JSON-RPC logging
+│   └── types.ts
+├── app/
+│   ├── page.tsx               the shell
+│   ├── inspector.tsx          the inspector UI (catalog · forms · RPC log)
+│   └── api/
+│       ├── inspect/route.ts   enumerate a server
+│       └── invoke/route.ts    call a tool / read a resource / get a prompt
+```
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Run it locally
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm install
+pnpm dev
+```
+
+Open http://localhost:3000 and connect to any MCP server — for example the
+local Conduit dev server at `http://localhost:3000/mcp`, or any public one.
+
+---
+
+## Notes
+
+- Probe speaks **Streamable HTTP**, the current MCP transport. SSE (the earlier
+  transport) is intentionally not supported — it has been removed from the spec.
+- Tool argument forms are generated from each tool's JSON Schema, so Probe
+  adapts to any server without per-server code.
+
+---
+
+## License
+
+MIT
