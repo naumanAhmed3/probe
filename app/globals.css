@@ -1,32 +1,48 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #0a0f0c;
-  --color-surface: #121915;
-  --color-surface-2: #18211c;
-  --color-edge: #28332c;
-  --color-edge-soft: #1e2722;
-  --color-brand: #4ade80;
-  --color-out: #4ade80;
-  --color-in: #38bdf8;
-  --color-bad: #f87171;
-  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  /* Editorial light palette — warm paper, ink, hairline rules. */
+  --color-paper: #f5f2ea;
+  --color-card: #fffefb;
+  --color-ink: #211d17;
+  --color-line: #e2dccd;
+  --color-line-soft: #ebe6d9;
+  --color-muted: #8b8474;
+  --color-accent: #4b48a8;
+  --color-code: #1c1b18;
+  --color-out: #4b48a8;
+  --color-in: #0d6e63;
+  --color-bad: #b9542b;
+
+  --font-display: var(--font-display), Georgia, serif;
+  --font-sans: var(--font-sans), -apple-system, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, Menlo, monospace;
 }
 
 html, body {
   margin: 0;
-  background: var(--color-ink);
-  color: #e6ebe8;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
-* { scrollbar-width: thin; scrollbar-color: #28332c transparent; }
-*::-webkit-scrollbar { width: 8px; height: 8px; }
-*::-webkit-scrollbar-thumb { background: #28332c; border-radius: 4px; }
+* { scrollbar-width: thin; scrollbar-color: #d8d2c2 transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-thumb { background: #d8d2c2; border-radius: 5px; }
 a { color: inherit; }
+::selection { background: #4b48a822; }
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
 
-@keyframes pb-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-.pb-fade { animation: pb-fade 0.3s ease-out both; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 
-@keyframes pb-spin { to { transform: rotate(360deg); } }
-.pb-spin { animation: pb-spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.7s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise { animation: none; }
+}

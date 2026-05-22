@@ -11,7 +11,7 @@ import type {
 
 // ─────────────────────────────────────────────────────────────
 // Probe — connect to an MCP server, browse its tools / resources /
-// prompts, invoke them, and watch the JSON-RPC traffic.
+// prompts, invoke them, and read the JSON-RPC traffic.
 // ─────────────────────────────────────────────────────────────
 
 interface Selection {
@@ -70,8 +70,7 @@ export function Inspector({ defaultUrl }: { defaultUrl: string }) {
         sel.kind === 'tool'
           ? conn.tools.find((t) => t.name === sel.name)
           : undefined;
-      const args =
-        sel.kind === 'resource' ? {} : coerceArgs(sel, tool, form);
+      const args = sel.kind === 'resource' ? {} : coerceArgs(tool, form);
       const res = await fetch('/api/invoke', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -98,63 +97,61 @@ export function Inspector({ defaultUrl }: { defaultUrl: string }) {
 
   return (
     <>
-      {/* Connect bar */}
-      <div className="flex items-center gap-2.5">
-        <div className="flex-1 flex items-center gap-2.5 rounded-xl bg-surface ring-1 ring-edge focus-within:ring-brand/50 px-3.5 h-11 transition">
-          <span className="text-[12px] font-mono text-neutral-600 shrink-0">
-            MCP
-          </span>
+      {/* Hero + connect */}
+      <section className="rise">
+        <h1 className="font-display text-[38px] sm:text-[46px] leading-[1.08] tracking-[-0.025em] font-semibold max-w-xl">
+          Inspect any <span className="italic text-accent">MCP</span> server.
+        </h1>
+        <p className="mt-4 text-[15px] leading-relaxed text-muted max-w-lg">
+          Connect over Streamable HTTP, browse the tools, resources and prompts
+          a server offers, invoke them, and read the JSON-RPC on the wire.
+        </p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            doConnect();
+          }}
+          className="mt-6 flex items-stretch gap-2.5 max-w-2xl"
+        >
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && doConnect()}
             placeholder="https://your-mcp-server/mcp"
-            className="flex-1 bg-transparent outline-none text-[13px] font-mono placeholder:text-neutral-600"
+            className="flex-1 h-12 rounded-lg bg-card border border-line px-4 text-[13.5px] font-mono outline-none transition placeholder:text-muted focus:border-accent"
           />
-        </div>
-        <button
-          onClick={doConnect}
-          disabled={connecting}
-          className="h-11 px-5 rounded-xl bg-brand text-ink text-sm font-semibold hover:brightness-110 disabled:opacity-60 transition inline-flex items-center gap-2"
-        >
-          {connecting && (
-            <span className="w-3.5 h-3.5 rounded-full border-2 border-ink/30 border-t-ink pb-spin" />
-          )}
-          Connect
-        </button>
-      </div>
-      <div className="mt-2 flex items-center gap-2">
-        <span className="text-[11px] text-neutral-600">try</span>
+          <button
+            type="submit"
+            disabled={connecting}
+            className="h-12 px-6 rounded-lg bg-accent text-card text-[14px] font-medium hover:opacity-90 disabled:opacity-50 transition inline-flex items-center gap-2.5"
+          >
+            {connecting && (
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-card/40 border-t-card spin" />
+            )}
+            Connect
+          </button>
+        </form>
         <button
           onClick={() => setUrl(defaultUrl)}
-          className="text-[11px] font-mono text-neutral-400 hover:text-brand"
+          className="mt-2 text-[12px] text-muted hover:text-accent transition"
         >
-          {defaultUrl}
+          try the Conduit server →
         </button>
-      </div>
+      </section>
 
       {connError && (
-        <p className="mt-4 rounded-lg bg-bad/10 ring-1 ring-bad/25 px-4 py-3 text-sm text-bad">
+        <p className="mt-6 rounded-md bg-card border border-line px-5 py-4 text-[14px] text-bad">
           {connError}
         </p>
       )}
 
-      {!conn && !connError && (
-        <p className="mt-10 text-center text-[13px] text-neutral-600">
-          Connect to a Model Context Protocol server to inspect its tools,
-          resources and prompts — and invoke them live.
-        </p>
-      )}
-
       {conn && (
-        <div className="mt-5 pb-fade">
+        <div className="mt-9 rise">
           {/* Server strip */}
-          <div className="flex items-center gap-2.5 flex-wrap rounded-xl bg-surface ring-1 ring-edge px-4 py-2.5">
-            <span className="w-2 h-2 rounded-full bg-brand" />
-            <span className="text-[13px] font-medium text-neutral-100">
+          <div className="flex items-baseline gap-3 flex-wrap pb-3 border-b border-line">
+            <h2 className="font-display text-[22px] tracking-[-0.015em]">
               {conn.server?.name ?? 'mcp-server'}
-            </span>
-            <span className="text-[11px] font-mono text-neutral-600">
+            </h2>
+            <span className="font-mono text-[12px] text-muted">
               v{conn.server?.version ?? '?'}
             </span>
             <span className="ml-auto flex items-center gap-1.5">
@@ -165,9 +162,8 @@ export function Inspector({ defaultUrl }: { defaultUrl: string }) {
           </div>
 
           {/* Catalog + detail */}
-          <div className="mt-4 grid lg:grid-cols-[260px_1fr] gap-4">
-            {/* Sidebar */}
-            <aside className="rounded-xl bg-surface ring-1 ring-edge p-2 h-fit">
+          <div className="mt-6 grid lg:grid-cols-[240px_1fr] gap-7">
+            <aside className="h-fit">
               <CatalogGroup label="Tools" count={conn.tools.length}>
                 {conn.tools.map((t) => (
                   <CatalogItem
@@ -201,12 +197,11 @@ export function Inspector({ defaultUrl }: { defaultUrl: string }) {
               </CatalogGroup>
             </aside>
 
-            {/* Detail */}
             <section className="min-w-0">
               {!sel ? (
-                <div className="rounded-xl border border-dashed border-edge px-6 py-14 text-center text-[13px] text-neutral-600">
+                <p className="font-display italic text-[16px] text-muted pt-4">
                   Select a tool, resource or prompt to inspect and run it.
-                </div>
+                </p>
               ) : (
                 <Detail
                   conn={conn}
@@ -223,13 +218,13 @@ export function Inspector({ defaultUrl }: { defaultUrl: string }) {
 
           {/* JSON-RPC log */}
           {rpc.length > 0 && (
-            <section className="mt-4">
-              <h2 className="text-[11px] uppercase tracking-wide text-neutral-500 mb-2">
+            <section className="mt-9">
+              <h3 className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted mb-2.5">
                 JSON-RPC exchange · {rpc.length} frames
-              </h2>
-              <div className="rounded-xl bg-surface ring-1 ring-edge divide-y divide-edge-soft overflow-hidden">
+              </h3>
+              <div className="rounded-lg bg-code overflow-hidden">
                 {rpc.map((e, i) => (
-                  <RpcFrame key={i} entry={e} />
+                  <RpcFrame key={i} entry={e} last={i === rpc.length - 1} />
                 ))}
               </div>
             </section>
@@ -269,7 +264,8 @@ function Detail({
       ? conn.prompts.find((p) => p.name === sel.name)
       : undefined;
 
-  const description = tool?.description ?? resource?.description ?? prompt?.description;
+  const description =
+    tool?.description ?? resource?.description ?? prompt?.description;
   const verb =
     sel.kind === 'tool'
       ? 'Run tool'
@@ -278,23 +274,21 @@ function Detail({
         : 'Get prompt';
 
   return (
-    <div className="rounded-xl bg-surface ring-1 ring-edge p-4">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] font-mono uppercase tracking-wide text-brand bg-brand/10 ring-1 ring-brand/20 rounded px-1.5 py-0.5">
-          {sel.kind}
-        </span>
-        <code className="text-[13.5px] font-mono text-neutral-100 break-all">
-          {sel.name}
-        </code>
+    <div>
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-muted">
+        {sel.kind}
       </div>
+      <code className="mt-1 block font-mono text-[18px] text-ink break-all">
+        {sel.name}
+      </code>
       {description && (
-        <p className="mt-2 text-[12.5px] text-neutral-400 leading-relaxed">
+        <p className="mt-2 text-[13.5px] text-ink/70 leading-relaxed">
           {description}
         </p>
       )}
 
       {/* Argument form */}
-      <div className="mt-3.5 space-y-2.5">
+      <div className="mt-5 space-y-3">
         {tool && <ToolForm tool={tool} form={form} setForm={setForm} />}
         {prompt?.arguments?.map((a) => (
           <Field
@@ -307,36 +301,40 @@ function Detail({
           />
         ))}
         {sel.kind === 'resource' && (
-          <p className="text-[12px] text-neutral-600">No arguments.</p>
+          <p className="text-[12.5px] text-muted italic font-display">
+            This resource takes no arguments.
+          </p>
         )}
       </div>
 
       <button
         onClick={onInvoke}
         disabled={running}
-        className="mt-4 h-9 px-4 rounded-lg bg-brand text-ink text-[13px] font-semibold hover:brightness-110 disabled:opacity-60 transition inline-flex items-center gap-2"
+        className="mt-5 h-10 px-5 rounded-lg bg-accent text-card text-[13px] font-medium hover:opacity-90 disabled:opacity-50 transition inline-flex items-center gap-2"
       >
         {running && (
-          <span className="w-3 h-3 rounded-full border-2 border-ink/30 border-t-ink pb-spin" />
+          <span className="w-3 h-3 rounded-full border-2 border-card/40 border-t-card spin" />
         )}
         {verb}
       </button>
 
       {/* Result */}
       {invocation && (
-        <div className="mt-4">
-          <div className="text-[11px] uppercase tracking-wide text-neutral-500 mb-1.5">
+        <div className="mt-5">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-muted mb-1.5">
             Result
           </div>
-          {invocation.ok ? (
-            <pre className="rounded-lg bg-ink ring-1 ring-edge px-3.5 py-3 text-[12px] font-mono text-neutral-300 overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-96">
-              {renderResult(sel.kind, invocation.result)}
-            </pre>
-          ) : (
-            <pre className="rounded-lg bg-bad/10 ring-1 ring-bad/25 px-3.5 py-3 text-[12px] font-mono text-bad overflow-x-auto whitespace-pre-wrap">
-              {invocation.error}
-            </pre>
-          )}
+          <pre
+            className={`rounded-lg px-4 py-3.5 font-mono text-[12px] overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-[28rem] ${
+              invocation.ok
+                ? 'bg-code text-[#cdc8bd]'
+                : 'bg-card border border-line text-bad'
+            }`}
+          >
+            {invocation.ok
+              ? renderResult(sel.kind, invocation.result)
+              : invocation.error}
+          </pre>
         </div>
       )}
     </div>
@@ -352,11 +350,16 @@ function ToolForm({
   form: Record<string, string>;
   setForm: (f: Record<string, string>) => void;
 }) {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   const props = (tool.inputSchema?.properties ?? {}) as Record<string, any>;
   const required: string[] = tool.inputSchema?.required ?? [];
   const keys = Object.keys(props);
   if (keys.length === 0) {
-    return <p className="text-[12px] text-neutral-600">No arguments.</p>;
+    return (
+      <p className="text-[12.5px] text-muted italic font-display">
+        This tool takes no arguments.
+      </p>
+    );
   }
   return (
     <>
@@ -396,18 +399,16 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-[12px] font-mono text-neutral-300">
-        {name}
-        {required && <span className="text-brand"> *</span>}
-        {hint && (
-          <span className="text-[11px] text-neutral-600 font-sans"> — {hint}</span>
-        )}
+      <span className="text-[12.5px]">
+        <span className="font-mono text-ink">{name}</span>
+        {required && <span className="text-accent"> *</span>}
+        {hint && <span className="text-muted"> — {hint}</span>}
       </span>
       {enumValues ? (
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-1 w-full h-9 rounded-lg bg-ink ring-1 ring-edge px-2.5 text-[13px] outline-none focus:ring-brand/50"
+          className="mt-1.5 w-full h-10 rounded-lg bg-card border border-line px-3 text-[13.5px] outline-none focus:border-accent transition"
         >
           <option value="">— choose —</option>
           {enumValues.map((v) => (
@@ -420,7 +421,7 @@ function Field({
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-1 w-full h-9 rounded-lg bg-ink ring-1 ring-edge px-3 text-[13px] outline-none focus:ring-brand/50"
+          className="mt-1.5 w-full h-10 rounded-lg bg-card border border-line px-3.5 text-[13.5px] outline-none focus:border-accent transition"
         />
       )}
     </label>
@@ -428,9 +429,10 @@ function Field({
 }
 
 // ── JSON-RPC frame ─────────────────────────────────────────
-function RpcFrame({ entry }: { entry: RpcEntry }) {
+function RpcFrame({ entry, last }: { entry: RpcEntry; last: boolean }) {
   const out = entry.dir === 'out';
-  const m = entry.message ?? {};
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const m: any = entry.message ?? {};
   const summary =
     m.method != null
       ? m.method
@@ -440,19 +442,17 @@ function RpcFrame({ entry }: { entry: RpcEntry }) {
           ? `error #${m.id}`
           : `#${m.id ?? '?'}`;
   return (
-    <details className="bg-surface group">
-      <summary className="flex items-center gap-2.5 px-3.5 py-2 cursor-pointer list-none">
+    <details className={last ? '' : 'border-b border-white/10'}>
+      <summary className="flex items-center gap-3 px-4 py-2.5 cursor-pointer">
         <span
-          className={`text-[11px] font-mono ${out ? 'text-out' : 'text-in'}`}
+          className="font-mono text-[10px] uppercase tracking-[0.12em]"
+          style={{ color: out ? 'var(--color-out)' : 'var(--color-in)' }}
         >
-          {out ? '▲ request' : '▼ response'}
+          {out ? 'request →' : '← response'}
         </span>
-        <code className="text-[12px] font-mono text-neutral-300">{summary}</code>
-        <span className="ml-auto text-[10px] text-neutral-600 group-open:hidden">
-          expand
-        </span>
+        <code className="font-mono text-[12.5px] text-[#cdc8bd]">{summary}</code>
       </summary>
-      <pre className="px-3.5 pb-3 text-[11px] font-mono text-neutral-400 overflow-x-auto leading-relaxed">
+      <pre className="px-4 pb-3.5 font-mono text-[11px] leading-relaxed text-white/45 overflow-x-auto">
         {JSON.stringify(m, null, 2)}
       </pre>
     </details>
@@ -462,10 +462,8 @@ function RpcFrame({ entry }: { entry: RpcEntry }) {
 function Cap({ on, label }: { on: boolean; label: string }) {
   return (
     <span
-      className={`text-[10.5px] font-mono rounded px-1.5 py-0.5 ring-1 ${
-        on
-          ? 'text-brand bg-brand/10 ring-brand/20'
-          : 'text-neutral-600 ring-edge'
+      className={`font-mono text-[10.5px] uppercase tracking-[0.1em] px-2 py-0.5 rounded ${
+        on ? 'text-accent bg-accent/8' : 'text-muted/60'
       }`}
     >
       {label}
@@ -483,15 +481,17 @@ function CatalogGroup({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-1">
-      <div className="px-2 py-1.5 text-[10.5px] uppercase tracking-wide text-neutral-500 flex items-center justify-between">
-        <span>{label}</span>
-        <span className="font-mono">{count}</span>
+    <div className="mb-5">
+      <div className="flex items-baseline justify-between pb-1.5 mb-1.5 border-b border-line">
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-muted">
+          {label}
+        </span>
+        <span className="font-mono text-[11px] text-muted">{count}</span>
       </div>
       {count === 0 ? (
-        <p className="px-2 pb-1.5 text-[11px] text-neutral-700">none</p>
+        <p className="text-[12px] text-muted/60 italic font-display">none</p>
       ) : (
-        <div className="space-y-0.5">{children}</div>
+        <div className="space-y-px">{children}</div>
       )}
     </div>
   );
@@ -511,21 +511,19 @@ function CatalogItem({
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-2 py-1.5 rounded-md transition ${
-        active ? 'bg-brand/15 ring-1 ring-brand/30' : 'hover:bg-surface-2'
+      className={`w-full text-left px-2.5 py-1.5 rounded-md transition ${
+        active ? 'bg-accent/10' : 'hover:bg-line-soft'
       }`}
     >
       <div
-        className={`text-[12.5px] font-mono truncate ${
-          active ? 'text-brand' : 'text-neutral-300'
+        className={`font-mono text-[12.5px] truncate ${
+          active ? 'text-accent' : 'text-ink/75'
         }`}
       >
         {label}
       </div>
       {sub && (
-        <div className="text-[10px] font-mono text-neutral-600 truncate">
-          {sub}
-        </div>
+        <div className="font-mono text-[10px] text-muted truncate">{sub}</div>
       )}
     </button>
   );
@@ -535,7 +533,6 @@ function CatalogItem({
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 function coerceArgs(
-  sel: Selection,
   tool: McpTool | undefined,
   form: Record<string, string>,
 ): Record<string, unknown> {
@@ -568,8 +565,8 @@ function renderResult(kind: InvokeKind, result: any): string {
     if (kind === 'prompt' && Array.isArray(result.messages)) {
       return result.messages
         .map(
-          (m: any) =>
-            `[${m.role}]\n${m.content?.text ?? JSON.stringify(m.content)}`,
+          (msg: any) =>
+            `[${msg.role}]\n${msg.content?.text ?? JSON.stringify(msg.content)}`,
         )
         .join('\n\n');
     }
